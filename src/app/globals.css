@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0f172a; /* Azul marino muy oscuro */
+  --color-foreground: #f8fafc; /* Blanco/Gris muy claro */
+  
+  --color-card: #1e293b;       /* Gris azulado para separar secciones */
+  --color-accent: #ff3b3b;     /* Rojo Pasión vibrante */
+  --color-accent-hover: #e62e2e;
+  
+  --color-primary: var(--color-accent);
+  --color-secondary: #334155;
+  
+  --color-gold: #ffd700;
+  --color-silver: #c0c0c0;
+  --color-bronze: #cd7f32;
+
+  --font-sans: "Outfit", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* En Tailwind 4 usamos @utility para definir clases personalizadas */
+@utility glass {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility glass-card {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  @apply rounded-xl p-5; /* Removido shadow-xl */
+}
+
+@utility text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-white;
+}
+
+@utility btn-primary {
+  @apply px-5 py-2 rounded-lg bg-accent text-white font-black uppercase italic tracking-tighter
+  hover:bg-accent-hover transition-all active:scale-95; /* Removido shadow-lg shadow-accent/20 */
+}
+
+@keyframes bounce-x {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+@keyframes infinite-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-bounce-x {
+  animation: bounce-x 1s infinite;
+}
+
+.animate-infinite-scroll {
+  animation: infinite-scroll 20s linear infinite;
+}
