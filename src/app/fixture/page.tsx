@@ -92,7 +92,7 @@ export default function FixturePage() {
       setLoading(true);
       
       // Obtener equipos
-      const { data: teamsData } = await supabase.from('teams').select('*');
+      const { data: teamsData } = await supabase.from('teams').select('*').eq('is_active', true);
       setTeams(teamsData || []);
 
       // Obtener estado del sorteo
@@ -256,6 +256,7 @@ export default function FixturePage() {
     const { data: standingsData } = await supabase
       .from('teams')
       .select('*')
+      .eq('is_active', true)
       .order('points', { ascending: false })
       .order('goals_for', { ascending: false });
 

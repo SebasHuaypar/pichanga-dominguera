@@ -24,6 +24,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('teams')
         .select('*')
+        .eq('is_active', true)
         .order('points', { ascending: false })
         .order('goals_for', { ascending: false });
       
