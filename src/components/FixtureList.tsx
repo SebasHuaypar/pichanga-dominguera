@@ -90,19 +90,30 @@ export default function FixtureList({ matches }: FixtureListProps) {
     }
   };
 
+  const sortedMatches = [...matches].sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+  const intervalMins = sortedMatches.length > 1 
+    ? Math.round((new Date(sortedMatches[1].scheduled_date).getTime() - new Date(sortedMatches[0].scheduled_date).getTime()) / 60000)
+    : 15;
+  
+  let breakMins = 2;
+  if (intervalMins === 18) breakMins = 3;
+  else if (intervalMins === 22) breakMins = 2;
+  else if (intervalMins === 12) breakMins = 2;
+  
+  const matchDuration = Math.max(1, intervalMins - breakMins);
+
   return (
     <div className="relative max-w-5xl mx-auto px-4 pb-20">
       {/* Línea central (Desktop) */}
       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 hidden md:block" />
 
       <div className="space-y-6 md:space-y-0 relative z-10">
-        {[...matches]
-          .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
-          .map((match, index) => {
+        {sortedMatches.map((match, index) => {
           const isEven = index % 2 === 0;
           const isLive = match.status === 'live';
           const isFinished = match.status === 'completed';
           const matchDate = new Date(match.scheduled_date);
+          const endDate = new Date(matchDate.getTime() + matchDuration * 60000);
 
           return (
             <div key={match.id} className="relative md:flex items-center">
@@ -113,8 +124,8 @@ export default function FixtureList({ matches }: FixtureListProps) {
                   isLive ? "bg-accent animate-pulse shadow-[0_0_15px_rgba(255,59,59,0.8)]" : 
                   isFinished ? "bg-white/30" : "bg-white/10"
                 )} />
-                <div className="absolute top-6 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-white/20">
-                  {format(matchDate, 'HH:mm')}
+                <div className="absolute top-6 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-[#FF3B3B] drop-shadow-[0_0_8px_rgba(255,59,59,0.8)]">
+                  {format(matchDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
                 </div>
               </div>
 
@@ -130,12 +141,12 @@ export default function FixtureList({ matches }: FixtureListProps) {
                 )}>
                   {/* Mobile-only time indicator (Outside & Centered) */}
                   <div className="md:hidden flex justify-center mb-3">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-white/20 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-[#FF3B3B] drop-shadow-[0_0_8px_rgba(255,59,59,0.8)] uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
                       <div className={cn(
                         "w-1.5 h-1.5 rounded-full",
                         isLive ? "bg-accent animate-pulse" : "bg-white/10"
                       )} />
-                      {format(matchDate, 'HH:mm')}
+                      {format(matchDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
                     </div>
                   </div>
 
@@ -153,7 +164,7 @@ export default function FixtureList({ matches }: FixtureListProps) {
                       <button 
                         onClick={() => setEditingMatch(match)}
                         className={cn(
-                          "absolute top-4 p-2 rounded-xl bg-white/5 text-white/20 hover:text-accent hover:bg-accent/10 transition-all z-20",
+                          "absolute top-4 p-2 rounded-xl bg-white/5 text-[#00FFFF] hover:text-[#00FFFF] hover:bg-[#00FFFF]/10 drop-shadow-[0_0_5px_rgba(0,255,255,0.5)] transition-all z-20",
                           isEven ? "right-4" : "md:right-auto md:left-4 right-4"
                         )}
                       >

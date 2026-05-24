@@ -171,8 +171,11 @@ export default function FixturePage() {
       baseDate.setHours(8, 30, 0, 0);
 
       const totalMatches = generatedMatches.length;
-      const totalMinutes = 180; // De 8:30 a 11:30 hay 180 minutos
-      const interval = totalMatches > 0 ? totalMinutes / totalMatches : 0;
+      const numTeams = activeTeamIds.length;
+      let interval = 15; // default fallback
+      if (numTeams === 4) interval = 22; // 20 play + 2 break
+      else if (numTeams === 5) interval = 18; // 15 play + 3 break
+      else if (numTeams >= 6) interval = 12; // 10 play + 2 break
 
       const finalMatches = generatedMatches.map((m, index) => {
         const matchTime = new Date(baseDate);
