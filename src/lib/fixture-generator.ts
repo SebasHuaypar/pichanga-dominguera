@@ -13,6 +13,58 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
+ * Reorders matches to minimize or eliminate back-to-back matches for any team.
+ */
+function reorderFixtureToAvoidBackToBack(matches: any[]): any[] {
+  let bestFixture = matches;
+  let minConsecutive = Infinity;
+
+  // Try multiple random greedy constructions to find a perfect sequence
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    const pool = [...matches];
+    const sequenced = [];
+    let consecutiveCount = 0;
+
+    // Shuffle pool to add randomness to the greedy search
+    const shuffledPool = shuffleArray(pool);
+
+    // Pick first match
+    sequenced.push(shuffledPool.shift());
+
+    while (shuffledPool.length > 0) {
+      const lastMatch = sequenced[sequenced.length - 1];
+      
+      // Find a match that doesn't share teams with lastMatch
+      const validIndex = shuffledPool.findIndex(m => 
+        m.home_team_id !== lastMatch.home_team_id &&
+        m.home_team_id !== lastMatch.away_team_id &&
+        m.away_team_id !== lastMatch.home_team_id &&
+        m.away_team_id !== lastMatch.away_team_id
+      );
+
+      if (validIndex !== -1) {
+        sequenced.push(shuffledPool.splice(validIndex, 1)[0]);
+      } else {
+        // No valid match found, we have to pick one that causes back-to-back
+        consecutiveCount++;
+        sequenced.push(shuffledPool.shift());
+      }
+    }
+
+    if (consecutiveCount === 0) {
+      return sequenced; // Found a sequence with no back-to-back!
+    }
+
+    if (consecutiveCount < minConsecutive) {
+      minConsecutive = consecutiveCount;
+      bestFixture = sequenced;
+    }
+  }
+
+  return bestFixture;
+}
+
+/**
  * Generates a randomized Round Robin fixture.
  * Shuffles teams before generating to ensure fairness.
  */
@@ -25,7 +77,7 @@ export function generateRandomFixture(teamIds: string[]) {
 
   const rounds = randomizedTeams.length - 1;
   const matchesPerRound = randomizedTeams.length / 2;
-  const fixture = [];
+  let fixture = [];
 
   for (let round = 0; round < rounds; round++) {
     for (let match = 0; match < matchesPerRound; match++) {
@@ -51,5 +103,5 @@ export function generateRandomFixture(teamIds: string[]) {
     }
   }
 
-  return fixture;
+  return reorderFixtureToAvoidBackToBack(fixture);
 }

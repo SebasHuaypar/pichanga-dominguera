@@ -113,7 +113,6 @@ export default function FixturePage() {
           home_team:teams!home_team_id(*),
           away_team:teams!away_team_id(*)
         `)
-        .order('round', { ascending: true })
         .order('scheduled_date', { ascending: true })
         .order('id', { ascending: true });
       

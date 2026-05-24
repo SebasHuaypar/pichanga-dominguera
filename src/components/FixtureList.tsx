@@ -96,7 +96,9 @@ export default function FixtureList({ matches }: FixtureListProps) {
       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 hidden md:block" />
 
       <div className="space-y-6 md:space-y-0 relative z-10">
-        {matches.map((match, index) => {
+        {[...matches]
+          .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
+          .map((match, index) => {
           const isEven = index % 2 === 0;
           const isLive = match.status === 'live';
           const isFinished = match.status === 'completed';
