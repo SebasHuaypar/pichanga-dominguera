@@ -16,185 +16,64 @@ function shuffleArray<T>(array: T[]): T[] {
  * Reorders matches to minimize or eliminate back-to-back matches for any team.
  */
 function reorderFixtureToAvoidBackToBack(matches: any[]): any[] {
-  const teamIds = Array.from(
-    new Set(matches.flatMap(m => [m.home_team_id, m.away_team_id]))
-  );
-
-  // Try increasing maxBackToBacks limits
-  for (let maxBackToBacks = 0; maxBackToBacks <= matches.length; maxBackToBacks++) {
-    // Try increasing maxRest limits
-    for (let maxRest = 1; maxRest <= matches.length; maxRest++) {
-      const used = new Array(matches.length).fill(false);
-      const path: any[] = [];
-      const lastPos: Record<string, number> = {};
-      for (const t of teamIds) {
-        lastPos[t] = -1;
-      }
-
-      let solved = false;
-      // Shuffle matches to ensure randomization across different generations
-      const shuffledMatches = shuffleArray(matches);
-
-      function solve(backToBackCount: number): boolean {
-        if (path.length === matches.length) {
-          solved = true;
-          return true;
-        }
-
-        const idx = path.length;
-
-        // Pruning: check if any team has rested too long
-        const mustPlayTeams: string[] = [];
-        for (const t of teamIds) {
-          if (lastPos[t] !== -1) {
-            const currentRest = idx - lastPos[t] - 1;
-            if (currentRest >= maxRest) {
-              mustPlayTeams.push(t);
-            }
-          }
-        }
-
-        if (mustPlayTeams.length > 2) {
-          return false; // Impossible to satisfy because too many teams must play in this single slot
-        }
-
-        if (mustPlayTeams.length === 2) {
-          const t1 = mustPlayTeams[0];
-          const t2 = mustPlayTeams[1];
-          const matchIdx = shuffledMatches.findIndex((m, i) => 
-            !used[i] && (
-              (m.home_team_id === t1 && m.away_team_id === t2) || 
-              (m.home_team_id === t2 && m.away_team_id === t1)
-            )
-          );
-          
-          if (matchIdx !== -1) {
-            const match = shuffledMatches[matchIdx];
-            
-            let causesBackToBack = false;
-            if (idx > 0) {
-              const prevMatch = path[idx - 1];
-              if (
-                match.home_team_id === prevMatch.home_team_id || 
-                match.home_team_id === prevMatch.away_team_id || 
-                match.away_team_id === prevMatch.home_team_id || 
-                match.away_team_id === prevMatch.away_team_id
-              ) {
-                causesBackToBack = true;
-              }
-            }
-
-            if (causesBackToBack && backToBackCount >= maxBackToBacks) {
-              return false;
-            }
-
-            used[matchIdx] = true;
-            path.push(match);
-            const prevHome = lastPos[match.home_team_id];
-            const prevAway = lastPos[match.away_team_id];
-            lastPos[match.home_team_id] = idx;
-            lastPos[match.away_team_id] = idx;
-
-            if (solve(backToBackCount + (causesBackToBack ? 1 : 0))) return true;
-
-            lastPos[match.home_team_id] = prevHome;
-            lastPos[match.away_team_id] = prevAway;
-            path.pop();
-            used[matchIdx] = false;
-          }
-          return false;
-        }
-
-        if (mustPlayTeams.length === 1) {
-          const t = mustPlayTeams[0];
-          for (let i = 0; i < shuffledMatches.length; i++) {
-            if (!used[i]) {
-              const match = shuffledMatches[i];
-              if (match.home_team_id === t || match.away_team_id === t) {
-                let causesBackToBack = false;
-                if (idx > 0) {
-                  const prevMatch = path[idx - 1];
-                  if (
-                    match.home_team_id === prevMatch.home_team_id || 
-                    match.home_team_id === prevMatch.away_team_id || 
-                    match.away_team_id === prevMatch.home_team_id || 
-                    match.away_team_id === prevMatch.away_team_id
-                  ) {
-                    causesBackToBack = true;
-                  }
-                }
-
-                if (causesBackToBack && backToBackCount >= maxBackToBacks) {
-                  continue;
-                }
-
-                used[i] = true;
-                path.push(match);
-                const prevHome = lastPos[match.home_team_id];
-                const prevAway = lastPos[match.away_team_id];
-                lastPos[match.home_team_id] = idx;
-                lastPos[match.away_team_id] = idx;
-
-                if (solve(backToBackCount + (causesBackToBack ? 1 : 0))) return true;
-
-                lastPos[match.home_team_id] = prevHome;
-                lastPos[match.away_team_id] = prevAway;
-                path.pop();
-                used[i] = false;
-              }
-            }
-          }
-          return false;
-        }
-
-        // Try any unused match
-        for (let i = 0; i < shuffledMatches.length; i++) {
-          if (!used[i]) {
-            const match = shuffledMatches[i];
-            let causesBackToBack = false;
-            if (idx > 0) {
-              const prevMatch = path[idx - 1];
-              if (
-                match.home_team_id === prevMatch.home_team_id || 
-                match.home_team_id === prevMatch.away_team_id || 
-                match.away_team_id === prevMatch.home_team_id || 
-                match.away_team_id === prevMatch.away_team_id
-              ) {
-                causesBackToBack = true;
-              }
-            }
-
-            if (causesBackToBack && backToBackCount >= maxBackToBacks) {
-              continue;
-            }
-
-            used[i] = true;
-            path.push(match);
-            const prevHome = lastPos[match.home_team_id];
-            const prevAway = lastPos[match.away_team_id];
-            lastPos[match.home_team_id] = idx;
-            lastPos[match.away_team_id] = idx;
-
-            if (solve(backToBackCount + (causesBackToBack ? 1 : 0))) return true;
-
-            lastPos[match.home_team_id] = prevHome;
-            lastPos[match.away_team_id] = prevAway;
-            path.pop();
-            used[i] = false;
-          }
-        }
-
-        return false;
-      }
-
-      solve(0);
-      if (solved) {
-        return path;
-      }
+  // 1. Group matches by round
+  const roundsMap: Record<number, any[]> = {};
+  matches.forEach(m => {
+    if (!roundsMap[m.round]) {
+      roundsMap[m.round] = [];
     }
+    roundsMap[m.round].push(m);
+  });
+
+  const sortedRounds = Object.keys(roundsMap).map(Number).sort((a, b) => a - b);
+  const orderedMatches: any[] = [];
+
+  if (sortedRounds.length === 0) return [];
+  
+  // For the first round, we just add the matches as they are
+  const firstRoundMatches = roundsMap[sortedRounds[0]];
+  orderedMatches.push(...firstRoundMatches);
+
+  for (let i = 1; i < sortedRounds.length; i++) {
+    const roundNum = sortedRounds[i];
+    const currentRoundMatches = [...roundsMap[roundNum]];
+    
+    // We want to find a match in currentRoundMatches where neither team played
+    // in the last match of the previous round.
+    const lastMatchOfPrevRound = orderedMatches[orderedMatches.length - 1];
+    const prevTeams = [lastMatchOfPrevRound.home_team_id, lastMatchOfPrevRound.away_team_id];
+
+    // Find index of match that does not contain any of the teams in prevTeams
+    let bestMatchIdx = currentRoundMatches.findIndex(m => 
+      !prevTeams.includes(m.home_team_id) && !prevTeams.includes(m.away_team_id)
+    );
+
+    if (bestMatchIdx !== -1) {
+      // Move this match to the beginning of this round
+      const [firstMatch] = currentRoundMatches.splice(bestMatchIdx, 1);
+      orderedMatches.push(firstMatch);
+    } else {
+      // If not possible, find the match with the minimum overlap
+      let minOverlapIdx = 0;
+      let minOverlapCount = 2;
+      currentRoundMatches.forEach((m, idx) => {
+        let overlap = 0;
+        if (prevTeams.includes(m.home_team_id)) overlap++;
+        if (prevTeams.includes(m.away_team_id)) overlap++;
+        if (overlap < minOverlapCount) {
+          minOverlapCount = overlap;
+          minOverlapIdx = idx;
+        }
+      });
+      const [firstMatch] = currentRoundMatches.splice(minOverlapIdx, 1);
+      orderedMatches.push(firstMatch);
+    }
+
+    // Add the rest of the matches for this round in their original order
+    orderedMatches.push(...currentRoundMatches);
   }
 
-  return matches;
+  return orderedMatches;
 }
 
 
