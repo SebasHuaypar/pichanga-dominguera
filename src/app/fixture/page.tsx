@@ -187,8 +187,8 @@ export default function FixturePage() {
           round: m.round,
           status: 'scheduled',
           scheduled_date: matchTime.toISOString(),
-          home_score: 0,
-          away_score: 0
+          home_score: null,
+          away_score: null
         };
       });
 
@@ -293,14 +293,17 @@ export default function FixturePage() {
     doc.setFontSize(12);
     doc.text('FIXTURE Y RESULTADOS', 20, nextY);
 
-    const fixtureRows = matches.map((m) => [
-      `Ronda ${m.round}`,
-      format(new Date(m.scheduled_date), 'HH:mm'),
-      `${m.home_team?.name || 'Local'}`,
-      m.status === 'completed' ? `${m.home_score} - ${m.away_score}` : 'vs',
-      `${m.away_team?.name || 'Visitante'}`,
-      m.status === 'completed' ? 'FINAL' : m.status === 'live' ? 'VIVO' : 'PROG'
-    ]);
+    const fixtureRows = matches.map((m) => {
+      const isFinished = m.home_score !== null && m.away_score !== null;
+      return [
+        `Ronda ${m.round}`,
+        format(new Date(m.scheduled_date), 'HH:mm'),
+        `${m.home_team?.name || 'Local'}`,
+        isFinished ? `${m.home_score} - ${m.away_score}` : 'vs',
+        `${m.away_team?.name || 'Visitante'}`,
+        isFinished ? 'FINAL' : 'PROG'
+      ];
+    });
 
     autoTable(doc, {
       startY: nextY + 5,

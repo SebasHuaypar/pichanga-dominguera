@@ -21,8 +21,9 @@ export default function FixtureList({ matches }: FixtureListProps) {
     setIsAdmin(localStorage.getItem("pichanga_admin") === "true");
   }, []);
 
-  const handleUpdateScore = async (matchId: string, home_score: number, away_score: number, status: Match['status'], scheduled_date?: string) => {
+  const handleUpdateScore = async (matchId: string, home_score: number | null, away_score: number | null, scheduled_date?: string) => {
     try {
+      const status = (home_score !== null && away_score !== null) ? 'completed' : 'scheduled';
       const updateData: any = { home_score, away_score, status };
       if (scheduled_date) updateData.scheduled_date = scheduled_date;
 
@@ -69,20 +70,6 @@ export default function FixtureList({ matches }: FixtureListProps) {
         }
       }
 
-      // Si el partido se marcó como completado, buscar el siguiente y ponerlo en vivo
-      if (status === 'completed') {
-        const currentIndex = matches.findIndex(m => m.id === matchId);
-        if (currentIndex !== -1 && currentIndex < matches.length - 1) {
-          const nextMatch = matches[currentIndex + 1];
-          if (nextMatch.status === 'scheduled') {
-            await supabase
-              .from('matches')
-              .update({ status: 'live' })
-              .eq('id', nextMatch.id);
-          }
-        }
-      }
-
       setEditingMatch(null);
     } catch (error) {
       console.error('Error updating match:', error);
@@ -110,8 +97,7 @@ export default function FixtureList({ matches }: FixtureListProps) {
       <div className="space-y-6 md:space-y-0 relative z-10">
         {sortedMatches.map((match, index) => {
           const isEven = index % 2 === 0;
-          const isLive = match.status === 'live';
-          const isFinished = match.status === 'completed';
+          const isFinished = match.home_score !== null && match.away_score !== null;
           const matchDate = new Date(match.scheduled_date);
           const endDate = new Date(matchDate.getTime() + matchDuration * 60000);
 
@@ -121,7 +107,6 @@ export default function FixtureList({ matches }: FixtureListProps) {
               <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center z-20">
                 <div className={cn(
                   "w-4 h-4 rounded-full border-4 border-background transition-all duration-500",
-                  isLive ? "bg-accent animate-pulse shadow-[0_0_15px_rgba(255,59,59,0.8)]" : 
                   isFinished ? "bg-white/30" : "bg-white/10"
                 )} />
                 <div className="absolute top-6 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-[#FF3B3B] drop-shadow-[0_0_8px_rgba(255,59,59,0.8)]">
@@ -142,10 +127,7 @@ export default function FixtureList({ matches }: FixtureListProps) {
                   {/* Mobile-only time indicator (Outside & Centered) */}
                   <div className="md:hidden flex justify-center mb-3">
                     <div className="flex items-center gap-2 text-[10px] font-black text-[#FF3B3B] drop-shadow-[0_0_8px_rgba(255,59,59,0.8)] uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                      <div className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        isLive ? "bg-accent animate-pulse" : "bg-white/10"
-                      )} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
                       {format(matchDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
                     </div>
                   </div>
@@ -154,10 +136,7 @@ export default function FixtureList({ matches }: FixtureListProps) {
                     initial={{ opacity: 0, x: isEven ? 20 : -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    className={cn(
-                      "w-full max-w-md bg-card border border-white/5 rounded-[2.5rem] p-6 sm:p-8 transition-all duration-500 hover:border-accent/20 relative overflow-hidden group",
-                      isLive && "ring-1 ring-accent/30 shadow-[0_0_50px_rgba(255,59,59,0.05)]"
-                    )}
+                    className="w-full max-w-md bg-card border border-white/5 rounded-[2.5rem] p-6 sm:p-8 transition-all duration-500 hover:border-accent/20 relative overflow-hidden group"
                   >
                     {/* Admin Edit */}
                     {isAdmin && (
@@ -179,11 +158,9 @@ export default function FixtureList({ matches }: FixtureListProps) {
                     )}>
                       <div className={cn(
                         "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                        isLive ? "bg-accent text-white" : 
                         isFinished ? "bg-white/5 text-white/40" : "bg-white/5 text-accent/60"
                       )}>
-                        {isLive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
-                        {isLive ? "En Vivo" : isFinished ? "Finalizado" : "Programado"}
+                        {isFinished ? "Finalizado" : "Programado"}
                       </div>
                     </div>
 
@@ -211,14 +188,14 @@ export default function FixtureList({ matches }: FixtureListProps) {
                         <div className="flex items-center gap-3">
                           <span className={cn(
                             "text-4xl sm:text-5xl font-black italic tracking-tighter leading-none",
-                            (isFinished || isLive) ? "text-white" : "text-white/5"
+                            isFinished ? "text-white" : "text-white/5"
                           )}>
                             {match.home_score ?? 0}
                           </span>
                           <span className="text-xl font-black text-accent/20 italic">-</span>
                           <span className={cn(
                             "text-4xl sm:text-5xl font-black italic tracking-tighter leading-none",
-                            (isFinished || isLive) ? "text-white" : "text-white/5"
+                            isFinished ? "text-white" : "text-white/5"
                           )}>
                             {match.away_score ?? 0}
                           </span>
@@ -276,15 +253,14 @@ export default function FixtureList({ matches }: FixtureListProps) {
                 <div className="text-center space-y-2">
                   <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">Actualizar Marcador</h2>
                   <p className="text-white/20 text-[10px] font-black uppercase tracking-[0.2em]">Gestión de torneo</p>
-                </div>
-
-                <div className="flex items-center justify-between gap-6">
+                </div>                 <div className="flex items-center justify-between gap-6">
                   <div className="flex-1 space-y-4 text-center">
                     <div className="text-[10px] font-black uppercase text-white/30 truncate">{editingMatch.home_team?.name}</div>
                     <input 
                       type="number" 
-                      defaultValue={editingMatch.home_score ?? 0}
+                      defaultValue={editingMatch.home_score ?? ""}
                       id="home_score"
+                      placeholder="0"
                       className="w-full bg-background border border-white/5 rounded-2xl py-6 text-4xl font-black text-center text-white focus:border-accent transition-all outline-none"
                     />
                   </div>
@@ -293,24 +269,12 @@ export default function FixtureList({ matches }: FixtureListProps) {
                     <div className="text-[10px] font-black uppercase text-white/30 truncate">{editingMatch.away_team?.name}</div>
                     <input 
                       type="number" 
-                      defaultValue={editingMatch.away_score ?? 0}
+                      defaultValue={editingMatch.away_score ?? ""}
                       id="away_score"
+                      placeholder="0"
                       className="w-full bg-background border border-white/5 rounded-2xl py-6 text-4xl font-black text-center text-white focus:border-accent transition-all outline-none"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Estado del Partido</label>
-                  <select 
-                    id="match_status"
-                    defaultValue={editingMatch.status}
-                    className="w-full bg-background border border-white/5 rounded-xl px-4 py-3 text-white font-bold text-sm focus:border-accent outline-none appearance-none"
-                  >
-                    <option value="scheduled">Programado</option>
-                    <option value="live">En Vivo</option>
-                    <option value="completed">Finalizado</option>
-                  </select>
                 </div>
 
                 <div className="space-y-4">
@@ -325,16 +289,24 @@ export default function FixtureList({ matches }: FixtureListProps) {
 
                 <button 
                   onClick={() => {
-                    const h_score = parseInt((document.getElementById('home_score') as HTMLInputElement).value);
-                    const a_score = parseInt((document.getElementById('away_score') as HTMLInputElement).value);
-                    const status = (document.getElementById('match_status') as HTMLSelectElement).value as Match['status'];
+                    const homeVal = (document.getElementById('home_score') as HTMLInputElement).value.trim();
+                    const awayVal = (document.getElementById('away_score') as HTMLInputElement).value.trim();
+                    
+                    const h_score = homeVal === "" ? null : parseInt(homeVal, 10);
+                    const a_score = awayVal === "" ? null : parseInt(awayVal, 10);
+                    
+                    if ((h_score === null && a_score !== null) || (h_score !== null && a_score === null)) {
+                      alert("Debes ingresar el marcador para ambos equipos, o dejar ambos vacíos para dejar el partido como programado.");
+                      return;
+                    }
+                    
                     const time = (document.getElementById('match_time') as HTMLInputElement).value;
                     
                     const newDate = new Date(editingMatch.scheduled_date);
                     const [hours, minutes] = time.split(':').map(Number);
                     newDate.setHours(hours, minutes);
                     
-                    handleUpdateScore(editingMatch.id, h_score, a_score, status, newDate.toISOString());
+                    handleUpdateScore(editingMatch.id, h_score, a_score, newDate.toISOString());
                   }}
                   className="w-full btn-primary py-5 text-lg"
                 >
