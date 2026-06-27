@@ -8,7 +8,7 @@
 - **Sorteo en Vivo (Real-time):** Animación de ruleta sincronizada para todos los usuarios. ¡El azar se vive en directo!
 - **Tabla de Posiciones Dinámica:** Recálculo automático de puntos, goles y posiciones al finalizar cada partido.
 - **Fixture Inteligente:** Generación secuencial de partidos concentrados en una sola jornada (8:30 AM - 11:30 AM).
-- **Transición Automática:** El sistema detecta el fin de un partido y activa automáticamente el siguiente como "En Vivo".
+- **Actualización Automática:** El sistema detecta el marcador ingresado y actualiza el estado del partido a "Finalizado" y la tabla de posiciones de forma instantánea.
 - **Reportes PDF:** Generación de informes profesionales con la tabla de clasificación y el fixture detallado para descargar y compartir.
 - **Panel de Administración:** Gestión completa de equipos (activar/desactivar), edición de marcadores y control del ciclo de vida del campeonato.
 - **Responsive Design:** Optimizado para que el árbitro actualice los goles desde su celular en plena cancha.
@@ -53,20 +53,15 @@
    npm run dev
    ```
 
-## Algoritmo de Fixture Inteligente (Mejorado)
+## Algoritmo de Fixture por Rondas (Mejorado)
 
-El sistema cuenta con un generador de cruces inteligente ([fixture-generator.ts](./src/lib/fixture-generator.ts)) diseñado para estructurar la jornada de manera justa y dinámica.
+El sistema cuenta con un generador de cruces inteligente ([fixture-generator.ts](./src/lib/fixture-generator.ts)) diseñado para estructurar la jornada de manera justa, balanceada y ordenada por rondas.
 
-En su versión anterior, el ordenamiento aleatorio-greedy de los partidos podía generar largas esperas para algunos equipos (un equipo esperando hasta 6 partidos seguidos sin jugar). La versión actual ha sido **optimizada** mediante un resolvedor de búsqueda inteligente (Backtracking con poda recursiva) que garantiza matemáticamente el menor descanso posible para cada caso:
+El fixture se genera siguiendo un orden estrictamente cronológico por rondas (Ronda 1, Ronda 2, Ronda 3, etc.), garantizando los siguientes criterios:
 
-- **6 Equipos (15 partidos):** Garantiza **0 partidos seguidos** (sin back-to-back) y un descanso máximo de exactamente **3 partidos** por equipo entre sus juegos. Este es el límite físico matemático óptimo para esta cantidad de equipos.
-- **5 Equipos (10 partidos - 1 descansa por fecha):** Garantiza **0 partidos seguidos** y un descanso máximo de exactamente **2 partidos** por equipo.
-- **4 Equipos (6 partidos):** En esta cantidad de equipos, evitar partidos seguidos por completo es imposible (genera un bloqueo de cruces). El algoritmo detecta esto y automáticamente activa un fallback dinámico que encuentra la solución óptima: solo **2 partidos seguidos en todo el torneo** y un descanso máximo de **2 partidos**.
-
-### ¿Cómo funciona la búsqueda inteligente?
-1. Genera de forma aleatoria la lista de cruces Round Robin.
-2. Inicia una búsqueda recursiva paramétrica, probando de forma incremental límites óptimos de partidos consecutivos permitidos (`maxBackToBacks`) y descanso consecutivo máximo (`maxRest`).
-3. Aplica **poda temprana en el árbol de búsqueda**: si más de dos equipos ya superaron su límite de descanso acumulado en una rama del fixture, el resolvedor retrocede instantáneamente. Esto reduce la complejidad computacional, permitiendo resolver cualquier número de equipos en **menos de 1 milisegundo**.
+- **Distribución Balanceada de Inicio:** En cada ronda, todos los equipos activos juegan exactamente una vez (en caso de número par de equipos). Por ejemplo, con 6 equipos, los primeros 3 partidos de la jornada corresponderán a la Ronda 1, garantizando que todos los equipos debuten en la cancha de inmediato.
+- **Prevención de Partidos Seguidos (Back-to-Back):** En la transición de una ronda $r-1$ a la ronda $r$, el algoritmo selecciona como primer partido de la ronda $r$ un cruce cuyos equipos **no hayan jugado en el último partido de la ronda anterior**. Esto evita que un equipo juegue de forma consecutiva.
+- **Eficiencia Matemática:** La lógica agrupa los encuentros por ronda y acomoda el primer partido mediante una búsqueda lineal simple basada en la exclusión de los últimos participantes, ejecutándose de forma instantánea y robusta.
 
 ## Estética y UX
 
